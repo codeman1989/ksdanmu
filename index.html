@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+    </head>
+		<input type="text" name="input" id ="input" value='TBxyoH1DGjg'/>
+        <button id="btn" type="button">点我发送请求</button>
+    </body>
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js" ></script>
+
+    <script type="text/javascript">
+        
+//ArrayBuffer转字符串
+function ab2str(u,f) {
+   var b = new Blob([u]);
+   var r = new FileReader();
+    r.readAsText(b, 'utf-8');
+    r.onload = function (){if(f)f.call(null,r.result)}
+}
+// 字符串转为ArrayBuffer对象，参数为字符串
+function stringToByte(str) {
+			var bytes = new Array();
+			var len, c;
+			len = str.length;
+			for(var i = 0; i < len; i++) {
+				c = str.charCodeAt(i);
+				if(c >= 0x010000 && c <= 0x10FFFF) {
+					bytes.push(((c >> 18) & 0x07) | 0xF0);
+					bytes.push(((c >> 12) & 0x3F) | 0x80);
+					bytes.push(((c >> 6) & 0x3F) | 0x80);
+					bytes.push((c & 0x3F) | 0x80);
+				} else if(c >= 0x000800 && c <= 0x00FFFF) {
+					bytes.push(((c >> 12) & 0x0F) | 0xE0);
+					bytes.push(((c >> 6) & 0x3F) | 0x80);
+					bytes.push((c & 0x3F) | 0x80);
+				} else if(c >= 0x000080 && c <= 0x0007FF) {
+					bytes.push(((c >> 6) & 0x1F) | 0xC0);
+					bytes.push((c & 0x3F) | 0x80);
+				} else {
+					bytes.push(c & 0xFF);
+				}
+			}
+			return bytes;
+ 
+ 
+		}
+
+function Bytes2Str(arr){
+	var str = "";
+
+	for(var i=0; i<arr.length; i++){
+		var tmp = arr[i].toString(10);
+		str = str+ tmp+",";
+	}
+	return str;
+}
+		$("#btn").click(function(){
+			
+			av = stringToByte($("#input").val());
+            // 创建WebSocket 对象
+            var ws = new WebSocket("wss://live-ws-pg.kuaishou.com/websocket");
+			ws.binaryType = "arraybuffer";
+            //连接成功时，触发事件
+            ws.onopen = function () {
+                //请求参数
+				
+                var a = [8,200,1,26,135,1,10,88,57,103,52,112,101,54,81,86,122,106,111,80,47,120,88,65,74,68,71,88,80,116,73,68,71,69,70,115,90,52,78,67,43,73,49,105,48,113,47,66,97,67,82,87,48,47,120,119,43,106,43,70,97,88,66,118,69,85,66,118,116,52,79,87,122,114,117,104,99,65,83,106,110,51,108,104,71,51,103,65,101,102,57,70,43,81,61,61,18,11];
+				var c = [58,30,105,113,85,87,70,115,126,97,49,65,52,65,108,119,49,81,95,49,53,51,54,53,56,54,51,54,55,52,54,57];
+				console.log(av);
+				d = a.concat(av);
+				e = d.concat(c);
+				
+				
+				var bytes = e;
+				var buffer = new ArrayBuffer(bytes.length);
+				
+				var view = new DataView(buffer);
+				view.setUint32(0, bytes.length);
+				for (var i = 0; i < bytes.length; i++) {
+					view.setUint8(i , bytes[i]);
+				}
+				
+				ws.send(view);
+                alert("数据发送中...");
+				//心跳
+				var bytes = [8,1,26,7,8,184,232,190,199,220,44];
+				var buffer = new ArrayBuffer(bytes.length);
+				
+				var beat = new DataView(buffer);
+				beat.setUint32(0, bytes.length);
+				for (var i = 0; i < bytes.length; i++) {
+					beat.setUint8(i , bytes[i]);
+				}
+				
+				
+				setInterval(function(){
+					ws.send(beat);
+				},2000);
+            }
+            //接收到服务端响应的数据时，触发事件
+            ws.onmessage = function (evt) {
+                var data = evt.data;
+				var int8View = new Uint8Array(data);
+
+				//实际调用
+				var str="";
+				if(data.byteLength<5000)
+				{
+					ab2str(data,function(str){
+						console.log(str);
+					});	
+				}
+				
+
+				
+            }
+            // 断开 web socket 连接成功触发事件
+            ws.onclose = function () {
+                alert("连接已关闭...");
+            };
+        });
+    </script>
+</html>
